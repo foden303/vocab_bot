@@ -10,12 +10,25 @@ class Config:
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+    OLLAMA_API_BASE = os.getenv("OLLAMA_API_BASE", "http://localhost:11434/v1")
+    LMSTUDIO_API_BASE = os.getenv("LMSTUDIO_API_BASE", "http://localhost:1234/v1")
 
     MODELS_CONFIG = {
         "gemini": {"name": "Gemini 2.5 Flash", "provider": "gemini", "model": "gemini-2.5-flash"},
         "openai": {"name": "GPT-3.5 Turbo", "provider": "openai", "model": "gpt-3.5-turbo"},
-        "openrouter": {"name": "OpenRouter (Claude 3 Haiku)", "provider": "openrouter", "model": "anthropic/claude-3-haiku"}
+        "openrouter": {"name": "OpenRouter (Claude 3 Haiku)", "provider": "openrouter", "model": "anthropic/claude-3-haiku"},
+        "ollama": {"name": "Ollama (Llama 3)", "provider": "ollama", "model": "llama3"},
+        "lmstudio": {"name": "LM Studio (Local)", "provider": "lmstudio", "model": "local-model"}
     }
     DEFAULT_MODEL = "gemini"
+    
+    # Anki Configuration
+    ANKI_CONNECT_URL = os.getenv("ANKI_CONNECT_URL", "http://localhost:8765")
+    ANKI_DECK_NAME = os.getenv("ANKI_DECK_NAME", "VocabBot")
+    ANKI_MODEL_NAME = os.getenv("ANKI_MODEL_NAME", "Basic")
+    SOUNDS_DIR = os.getenv("SOUNDS_DIR", os.path.join(os.path.dirname(__file__), "sounds"))
+    
+    # Ensure directories exist
+    os.makedirs(SOUNDS_DIR, exist_ok=True)
 
 config = Config()

@@ -11,10 +11,17 @@ class LLMService:
             api_key=config.OPENAI_API_KEY) if config.OPENAI_API_KEY else None
         self.gemini_client = genai.Client(
             api_key=config.GEMINI_API_KEY) if config.GEMINI_API_KEY else None
-        self.openrouter_client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=config.OPENROUTER_API_KEY,
         ) if config.OPENROUTER_API_KEY else None
+        self.ollama_client = OpenAI(
+            base_url=config.OLLAMA_API_BASE,
+            api_key="none"  # Ollama doesn't require keys usually
+        )
+        self.lmstudio_client = OpenAI(
+            base_url=config.LMSTUDIO_API_BASE,
+            api_key="none"
+        )
 
     def get_vocab_prompt(self, word: str) -> str:
         return f"""Generate comprehensive vocabulary information for the word: {word}
@@ -80,6 +87,22 @@ Return ONLY this JSON structure:
             response = self.openrouter_client.chat.completions.create(
                 model=cfg["model"],
                 messages=[{"role": "user", "content": prompt}],
+            )
+            text = response.choices[0].message.content
+
+        elif cfg["provider"] == "ollama":
+            response = self.ollama_client.chat.completions.create(
+                model=cfg["model"],
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0
+            )
+            text = response.choices[0].message.content
+
+        elif cfg["provider"] == "lmstudio":
+            response = self.lmstudio_client.chat.completions.create(
+                model=cfg["model"],
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0
             )
             text = response.choices[0].message.content
 

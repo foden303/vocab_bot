@@ -1,0 +1,230 @@
+<div class="card back">
+    <div class="header">
+        <div class="word-mini">{{word}}</div>
+        <div class="pronunciation-mini">{{pronunciation}}</div>
+        {{#level}}
+        <div class="level-badge">{{level}}</div>
+        {{/level}}
+    </div>
+    
+    <div class="divider"></div>
+
+    <div class="main-content">
+        <div class="meaning-vn-box">
+            <span class="meaning-vn-text">{{meaning_vn}}</span>
+        </div>
+
+        <div class="section">
+            <div class="label">English Meaning</div>
+            <div class="content">{{meaning}}</div>
+        </div>
+
+        {{#example}}
+        <div class="section example-section">
+            <div class="label">Example Usage</div>
+            <div class="content italic">"{{example}}"</div>
+        </div>
+        {{/example}}
+        
+        {{#collocation}}
+        <div class="section">
+            <div class="label">Collocations</div>
+            <div class="content list-content">{{collocation}}</div>
+        </div>
+        {{/collocation}}
+
+        {{#word_patterns}}
+        <div class="section">
+            <div class="label">Word Patterns</div>
+            <div class="content list-content">{{word_patterns}}</div>
+        </div>
+        {{/word_patterns}}
+    </div>
+
+    <div class="meta-container">
+        <div class="meta-row">
+            {{#synonyms}}
+            <div class="meta-col">
+                <div class="meta-label">Synonyms</div>
+                <div class="meta-val">{{synonyms}}</div>
+            </div>
+            {{/synonyms}}
+            
+            {{#antonyms}}
+            <div class="meta-col">
+                <div class="meta-label">Antonyms</div>
+                <div class="meta-val">{{antonyms}}</div>
+            </div>
+            {{/antonyms}}
+        </div>
+
+        <div class="meta-row">
+            {{#related_words}}
+            <div class="meta-col">
+                <div class="meta-label">Related Words</div>
+                <div class="meta-val">{{related_words}}</div>
+            </div>
+            {{/related_words}}
+            
+            {{#paraphrase}}
+            <div class="meta-col">
+                <div class="meta-label">Paraphrase</div>
+                <div class="meta-val">{{paraphrase}}</div>
+            </div>
+            {{/paraphrase}}
+        </div>
+        
+        {{#topic}}
+        <div class="meta-row full-width">
+            <div class="meta-col">
+                <div class="meta-label">Topic</div>
+                <div class="meta-val highlight">{{topic}}</div>
+            </div>
+        </div>
+        {{/topic}}
+    </div>
+</div>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+
+    .card {
+        font-family: 'Outfit', sans-serif;
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 30px;
+        color: #1e293b;
+        max-width: 500px;
+        margin: auto;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .word-mini {
+        font-size: 32px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .pronunciation-mini {
+        font-size: 16px;
+        color: #64748b;
+        font-style: italic;
+    }
+
+    .level-badge {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: #fef08a;
+        color: #854d0e;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .divider {
+        height: 2px;
+        background: linear-gradient(to right, transparent, #e2e8f0, transparent);
+        margin: 0 0 25px 0;
+    }
+
+    .meaning-vn-box {
+        background: #eff6ff;
+        padding: 15px;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 25px;
+        border: 1px solid #dbeafe;
+    }
+
+    .meaning-vn-text {
+        font-size: 24px;
+        font-weight: 600;
+        color: #1a73e8;
+    }
+
+    .section {
+        margin-bottom: 20px;
+    }
+
+    .label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #94a3b8;
+        margin-bottom: 6px;
+    }
+
+    .content {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #334155;
+    }
+
+    .content.italic {
+        font-style: italic;
+        color: #475569;
+    }
+
+    .list-content {
+        padding-left: 0;
+        color: #1e293b;
+    }
+
+    .example-section {
+        background: #f8fafc;
+        padding: 15px;
+        border-radius: 12px;
+        border-left: 4px solid #3b82f6;
+    }
+
+    .meta-container {
+        margin-top: 30px;
+        padding-top: 25px;
+        border-top: 1px dashed #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .meta-row {
+        display: flex;
+        gap: 20px;
+    }
+
+    .meta-col {
+        flex: 1;
+    }
+
+    .meta-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #cbd5e1;
+        margin-bottom: 4px;
+    }
+
+    .meta-val {
+        font-size: 14px;
+        color: #64748b;
+        line-height: 1.4;
+    }
+
+    .highlight {
+        color: #3b82f6;
+        font-weight: 600;
+    }
+
+    .full-width {
+        width: 100%;
+    }
+</style>

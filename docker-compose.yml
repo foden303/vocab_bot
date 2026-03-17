@@ -4,6 +4,8 @@ services:
     container_name: vocab-bot
     restart: unless-stopped
     env_file: .env
+    volumes:
+      - ./sounds:/app/sounds
     # Or map individual env vars if preferred
     # environment:
     #   - BOT_TOKEN=${BOT_TOKEN}
