@@ -4,10 +4,13 @@ from openai import OpenAI
 from google import genai
 from config import config
 
+
 class LLMService:
     def __init__(self):
-        self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY) if config.OPENAI_API_KEY else None
-        self.gemini_client = genai.Client(api_key=config.GEMINI_API_KEY) if config.GEMINI_API_KEY else None
+        self.openai_client = OpenAI(
+            api_key=config.OPENAI_API_KEY) if config.OPENAI_API_KEY else None
+        self.gemini_client = genai.Client(
+            api_key=config.GEMINI_API_KEY) if config.GEMINI_API_KEY else None
         self.openrouter_client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=config.OPENROUTER_API_KEY,
@@ -16,19 +19,22 @@ class LLMService:
     def get_vocab_prompt(self, word: str) -> str:
         return f"""Generate comprehensive vocabulary information for the word: {word}
 
+CRITICAL RULE FOR SPELLING:
+If the input word "{word}" is misspelled or has a typo, identify the most likely intended English word and provide the vocabulary information for that corrected word instead.
+
 Follow these specific rules:
 1. Provide the main "meaning_vn" as the primary Vietnamese definition.
 2. For "example", provide a high-quality English sentence followed by its Vietnamese translation in parentheses.
-3. For "patterns", "synonyms", "antonyms", "related_words", and "collocation", ALWAYS include the Vietnamese meaning in parentheses next to every English term (e.g., "disaster (thảm họa)").
+3. For "patterns", "synonyms", "antonyms", "related_words", "paraphrase", and "collocation", ALWAYS include the Vietnamese meaning in parentheses next to every English term (e.g., "disaster (thảm họa)").
 4. Ensure the JSON is valid and contains no preamble or markdown code blocks.
 
 Return ONLY this JSON structure:
 
 {{
- "word": "",
+ "word": "Corrected word if misspelled",
  "category": [],
  "pronunciation": "US: /.../ | UK: /.../",
- "meaning_vn": "Meaning in Vietnamese",
+ "meaning_vn": "Nghĩa tiếng việt ngắn gọn, dễ hiểu",
  "meaning": "Meaning in English",
  "example": "English sentence. (Dịch tiếng Việt)",
  "level": "A1-C2",
@@ -44,7 +50,8 @@ Return ONLY this JSON structure:
 
     def call_llm(self, word: str, model_key: str = None) -> dict:
         model_key = model_key or config.DEFAULT_MODEL
-        cfg = config.MODELS_CONFIG.get(model_key, config.MODELS_CONFIG[config.DEFAULT_MODEL])
+        cfg = config.MODELS_CONFIG.get(
+            model_key, config.MODELS_CONFIG[config.DEFAULT_MODEL])
         prompt = self.get_vocab_prompt(word)
 
         text = ""
@@ -81,5 +88,6 @@ Return ONLY this JSON structure:
             text = re.sub(r"```json\n|```", "", text).strip()
 
         return json.loads(text)
+
 
 llm_service = LLMService()
