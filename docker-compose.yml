@@ -1,0 +1,12 @@
+services:
+  vocab-bot:
+    build: .
+    container_name: vocab-bot
+    restart: unless-stopped
+    env_file: .env
+    # Or map individual env vars if preferred
+    # environment:
+    #   - BOT_TOKEN=${BOT_TOKEN}
+    #   - NOTION_TOKEN=${NOTION_TOKEN}
+    #   - NOTION_DATABASE_ID=${NOTION_DATABASE_ID}
+    #   - GEMINI_API_KEY=${GEMINI_API_KEY}
