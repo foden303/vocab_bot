@@ -4,6 +4,7 @@ services:
     container_name: vocab-bot
     restart: unless-stopped
     env_file: .env
+    network_mode: "host"
     volumes:
       - ./sounds:/app/sounds
     # Or map individual env vars if preferred
@@ -12,3 +13,4 @@ services:
     #   - NOTION_TOKEN=${NOTION_TOKEN}
     #   - NOTION_DATABASE_ID=${NOTION_DATABASE_ID}
     #   - GEMINI_API_KEY=${GEMINI_API_KEY}
+    #   - ANKI_CONNECT_URL=${ANKI_CONNECT_URL}

@@ -1,28 +1,18 @@
 <div class="card front">
     <div class="word">{{word}}</div>
     <div class="pronunciation">{{pronunciation}}</div>
-    
+
     <div class="action-row">
-        {{#category}}
+        <div>{{sound}}{{^sound}}{{tts en_US:word}}{{/sound}}</div>
         <span class="category-tag">{{category}}</span>
-        {{/category}}
-        
-        <!-- Anki Sound Tag (Generated from mp3 file or hidden TTS) -->
-        <div class="audio-btn" onclick="pycmd('ans:play');">
-            <svg viewBox="0 0 24 24" width="24" height="24">
-                <path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.26 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-            </svg>
-        </div>
-        
-        <div style="display:none">{{sound}}{{^sound}}{{tts en_US:word}}{{/sound}}</div>
     </div>
 </div>
 
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
 
     .card {
-        font-family: 'Outfit', sans-serif;
+        font-family: 'Inter', sans-serif;
         background: #ffffff;
         border-radius: 24px;
         padding: 50px 30px;
@@ -45,14 +35,14 @@
         font-size: 22px;
         color: #64748b;
         font-weight: 300;
-        margin-bottom: 30px;
+        margin-bottom: 22px;
     }
 
     .action-row {
         display: flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        gap: 12px;
+        gap: 16px;
     }
 
     .category-tag {
@@ -64,28 +54,5 @@
         font-weight: 600;
         text-transform: lowercase;
         border: 1px solid #e2e8f0;
-    }
-
-    .audio-btn {
-        width: 42px;
-        height: 42px;
-        background: #3b82f6;
-        color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: transform 0.2s, background 0.2s;
-        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
-    }
-
-    .audio-btn:hover {
-        background: #2563eb;
-        transform: scale(1.05);
-    }
-
-    .audio-btn:active {
-        transform: scale(0.95);
     }
 </style>

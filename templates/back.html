@@ -2,101 +2,105 @@
     <div class="header">
         <div class="word-mini">{{word}}</div>
         <div class="pronunciation-mini">{{pronunciation}}</div>
-        {{#level}}
+        <!-- {{#level}} -->
         <div class="level-badge">{{level}}</div>
-        {{/level}}
+        <!-- {{/level}} -->
     </div>
-    
+
     <div class="divider"></div>
 
     <div class="main-content">
+        <div>{{sound}}{{^sound}}{{tts en_US:word}}{{/sound}}</div>
         <div class="meaning-vn-box">
             <span class="meaning-vn-text">{{meaning_vn}}</span>
         </div>
-
         <div class="section">
             <div class="label">English Meaning</div>
             <div class="content">{{meaning}}</div>
         </div>
 
-        {{#example}}
+        <!-- {{#example}} -->
         <div class="section example-section">
             <div class="label">Example Usage</div>
             <div class="content italic">"{{example}}"</div>
         </div>
-        {{/example}}
-        
-        {{#collocation}}
-        <div class="section">
-            <div class="label">Collocations</div>
-            <div class="content list-content">{{collocation}}</div>
-        </div>
-        {{/collocation}}
+        <!-- {{/example}} -->
 
-        {{#word_patterns}}
+        <!-- {{#word_patterns}} -->
         <div class="section">
             <div class="label">Word Patterns</div>
             <div class="content list-content">{{word_patterns}}</div>
         </div>
-        {{/word_patterns}}
+        <!-- {{/word_patterns}} -->
+
+        <!-- {{#collocation}} -->
+        <div class="section">
+            <div class="label">Collocations</div>
+            <div class="content list-content">{{collocation}}</div>
+        </div>
+        <!-- {{/collocation}} -->
     </div>
 
     <div class="meta-container">
         <div class="meta-row">
-            {{#synonyms}}
+            <!-- {{#synonyms}} -->
             <div class="meta-col">
                 <div class="meta-label">Synonyms</div>
                 <div class="meta-val">{{synonyms}}</div>
             </div>
-            {{/synonyms}}
-            
-            {{#antonyms}}
+            <!-- {{/synonyms}} -->
+        </div>
+        <div class="meta-row">
+            <!-- {{#antonyms}} -->
             <div class="meta-col">
                 <div class="meta-label">Antonyms</div>
                 <div class="meta-val">{{antonyms}}</div>
             </div>
-            {{/antonyms}}
+            <!-- {{/antonyms}} -->
         </div>
 
         <div class="meta-row">
-            {{#related_words}}
+            <!-- {{#related_words}} -->
             <div class="meta-col">
                 <div class="meta-label">Related Words</div>
                 <div class="meta-val">{{related_words}}</div>
             </div>
-            {{/related_words}}
-            
-            {{#paraphrase}}
+            <!-- {{/related_words}} -->
+        </div>
+
+        <div class="meta-row">
+            <!-- {{#paraphrase}} -->
             <div class="meta-col">
                 <div class="meta-label">Paraphrase</div>
                 <div class="meta-val">{{paraphrase}}</div>
             </div>
-            {{/paraphrase}}
+            <!-- {{/paraphrase}} -->
         </div>
-        
-        {{#topic}}
-        <div class="meta-row full-width">
-            <div class="meta-col">
-                <div class="meta-label">Topic</div>
-                <div class="meta-val highlight">{{topic}}</div>
-            </div>
-        </div>
-        {{/topic}}
     </div>
 </div>
 
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
 
     .card {
-        font-family: 'Outfit', sans-serif;
+        font-family: 'Inter', sans-serif;
         background: #ffffff;
         border-radius: 20px;
         padding: 30px;
         color: #1e293b;
         max-width: 500px;
         margin: auto;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .meta-val {
+        white-space: pre-wrap;
+    }
+
+    .audio-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
     }
 
     .header {

@@ -8,12 +8,18 @@ from config import config
 class LLMService:
     def __init__(self):
         self.openai_client = OpenAI(
-            api_key=config.OPENAI_API_KEY) if config.OPENAI_API_KEY else None
+            api_key=config.OPENAI_API_KEY
+        ) if config.OPENAI_API_KEY else None
+
         self.gemini_client = genai.Client(
-            api_key=config.GEMINI_API_KEY) if config.GEMINI_API_KEY else None
+            api_key=config.GEMINI_API_KEY
+        ) if config.GEMINI_API_KEY else None
+
+        self.openrouter_client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=config.OPENROUTER_API_KEY,
         ) if config.OPENROUTER_API_KEY else None
+
         self.ollama_client = OpenAI(
             base_url=config.OLLAMA_API_BASE,
             api_key="none"  # Ollama doesn't require keys usually
@@ -24,25 +30,24 @@ class LLMService:
         )
 
     def get_vocab_prompt(self, word: str) -> str:
-        return f"""Generate comprehensive vocabulary information for the word: {word}
+        return f"""Generate comprehensive vocabulary information for the word: {word} based on Oxford Learner's Dictionary standards.
 
 CRITICAL RULE FOR SPELLING:
-If the input word "{word}" is misspelled or has a typo, identify the most likely intended English word and provide the vocabulary information for that corrected word instead.
+If the input word "{word}" is misspelled, identify the most likely intended English word and provide information for that corrected word.
 
 Follow these specific rules:
-1. Provide the main "meaning_vn" as the primary Vietnamese definition.
-2. For "example", provide a high-quality English sentence followed by its Vietnamese translation in parentheses.
-3. For "patterns", "synonyms", "antonyms", "related_words", "paraphrase", and "collocation", ALWAYS include the Vietnamese meaning in parentheses next to every English term (e.g., "disaster (thảm họa)").
-4. Ensure the JSON is valid and contains no preamble or markdown code blocks.
-
-Return ONLY this JSON structure:
+1. PRONUNCIATION: Use only US Phonetic Alphabet. Format must be exactly /.../ (e.g., /əˈbiliti/). Do not include "US:" prefix.
+2. DEFINITIONS: "meaning" must align with Oxford Learner's Dictionary definitions. "meaning_vn" is the concise Vietnamese equivalent.
+3. EXAMPLES: Provide one high-quality sentence followed by its Vietnamese translation in parentheses.
+4. FORMATTING: For "patterns", "synonyms", "antonyms", "related_words", "paraphrase", and "collocation", ALWAYS include the Vietnamese meaning in parentheses: "word (nghĩa)".
+5. OUTPUT: Return ONLY a valid JSON object. No preamble, no markdown code blocks.
 
 {{
  "word": "Corrected word if misspelled",
- "category": [],
- "pronunciation": "US: /.../ | UK: /.../",
- "meaning_vn": "Nghĩa tiếng việt ngắn gọn, dễ hiểu",
- "meaning": "Meaning in English",
+ "category": ["noun/verb/adj..."],
+ "pronunciation": "/.../",
+ "meaning_vn": "Nghĩa tiếng Việt ngắn gọn",
+ "meaning": "English definition based on Oxford",
  "example": "English sentence. (Dịch tiếng Việt)",
  "level": "A1-C2",
  "topic": [],

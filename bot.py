@@ -9,7 +9,8 @@ from anki_service import anki_service
 from audio_service import audio_service
 
 # --- SUPPRESS WARNINGS ---
-warnings.filterwarnings("ignore", category=FutureWarning, module="google.api_core")
+warnings.filterwarnings("ignore", category=FutureWarning,
+                        module="google.api_core")
 
 # --- GLOBAL STATE ---
 USER_MODELS = {}  # chat_id -> model_key
@@ -17,6 +18,7 @@ USER_MODELS = {}  # chat_id -> model_key
 # --- INIT ---
 bot = Bot(token=config.BOT_TOKEN)
 dp = Dispatcher(bot)
+
 
 @dp.message_handler(commands=['start', 'help'])
 async def help_handler(message: types.Message):
@@ -36,6 +38,7 @@ async def help_handler(message: types.Message):
     """
     await message.reply(help_text, parse_mode="Markdown")
 
+
 @dp.message_handler(commands=['info'])
 async def info_handler(message: types.Message):
     model_key = USER_MODELS.get(message.chat.id, config.DEFAULT_MODEL)
@@ -53,6 +56,7 @@ async def info_handler(message: types.Message):
     """
     await message.reply(info_text, parse_mode="Markdown")
 
+
 @dp.message_handler(commands=['setmodel'])
 async def set_model_handler(message: types.Message):
     keyboard = types.InlineKeyboardMarkup(row_width=1)
@@ -62,6 +66,7 @@ async def set_model_handler(message: types.Message):
         keyboard.add(button)
 
     await message.reply("Select the LLM model you want to use:", reply_markup=keyboard)
+
 
 @dp.callback_query_handler(lambda c: c.data.startswith('model_'))
 async def process_model_callback(callback_query: types.CallbackQuery):
@@ -75,6 +80,7 @@ async def process_model_callback(callback_query: types.CallbackQuery):
         message_id=callback_query.message.message_id,
         parse_mode="Markdown"
     )
+
 
 @dp.message_handler(commands=['add'])
 async def add_vocab_handler(message: types.Message):
@@ -103,6 +109,7 @@ async def add_vocab_handler(message: types.Message):
             text=f"❌ Error: {str(e)}"
         )
 
+
 @dp.message_handler(commands=['sync'])
 async def sync_handler(message: types.Message):
     # Check if Anki is open first
@@ -111,10 +118,10 @@ async def sync_handler(message: types.Message):
         return
 
     sync_msg = await message.reply("⏳ Fetching unsynced vocab from Notion...")
-    
+
     try:
         unsynced_items = notion_service.get_unsynced_vocab()
-        
+
         if not unsynced_items:
             await bot.edit_message_text(
                 chat_id=message.chat.id,
@@ -130,20 +137,23 @@ async def sync_handler(message: types.Message):
         )
 
         sync_results = anki_service.sync_to_anki(unsynced_items)
-        
-        success_ids = [res["page_id"] for res in sync_results if res["success"]]
+
+        success_ids = [res["page_id"]
+                       for res in sync_results if res["success"]]
         failed_items = [res for res in sync_results if not res["success"]]
 
         if success_ids:
-            notion_service.mark_as_synced(success_ids)
+            notion_service.mark_as_synced(
+                notion_service.PROP_SYNCED_TO_ANKI, success_ids)
 
         report = f"✅ Synced **{len(success_ids)}** items to Anki."
         if failed_items:
             report += f"\n❌ Failed **{len(failed_items)}** items."
             for f in failed_items:
-                 # Find word name for error reporting
-                 word = next((item["word"] for item in unsynced_items if item["page_id"] == f["page_id"]), "Unknown")
-                 report += f"\n- {word}: {f['error']}"
+                # Find word name for error reporting
+                word = next(
+                    (item["word"] for item in unsynced_items if item["page_id"] == f["page_id"]), "Unknown")
+                report += f"\n- {word}: {f['error']}"
 
         await bot.edit_message_text(
             chat_id=message.chat.id,
@@ -158,13 +168,14 @@ async def sync_handler(message: types.Message):
             text=f"❌ Sync Error: {str(e)}"
         )
 
+
 @dp.message_handler(commands=['getaudio'])
 async def get_audio_handler(message: types.Message):
     wait_msg = await message.reply("⏳ Searching for unsynced vocab in Notion...")
-    
+
     try:
-        unsynced_items = notion_service.get_unsynced_vocab()
-        
+        unsynced_items = notion_service.get_unsynced_audio()
+
         if not unsynced_items:
             await bot.edit_message_text(
                 chat_id=message.chat.id,
@@ -179,20 +190,26 @@ async def get_audio_handler(message: types.Message):
             text=f"🎧 Found {len(unsynced_items)} unsynced items. Starting download from Oxford..."
         )
 
-        success_count = 0
+        success_ids = []
         failed_list = []
 
         for item in unsynced_items:
             word = item["word"]
+            page_id = item["page_id"]
             success, result = audio_service.download_oxford_audio(word)
             if success:
-                success_count += 1
+                success_ids.append(page_id)
             else:
                 failed_list.append(f"{word} ({result})")
 
-        report = f"📊 **Audio Download Report**\n- Success: {success_count}\n- Failed: {len(failed_list)}"
+        if success_ids:
+            notion_service.mark_as_synced(
+                notion_service.PROP_SYNC_AUDIO, success_ids)
+
+        report = f"📊 **Audio Download Report**\n- Success: {len(success_ids)}\n- Failed: {len(failed_list)}"
         if failed_list:
-            report += "\n\n❌ **Failures:**\n" + "\n".join([f"- {i}" for i in failed_list[:10]])
+            report += "\n\n❌ **Failures:**\n" + \
+                "\n".join([f"- {i}" for i in failed_list[:10]])
             if len(failed_list) > 10:
                 report += f"\n... and {len(failed_list) - 10} more."
 
