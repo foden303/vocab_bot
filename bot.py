@@ -196,7 +196,7 @@ async def get_audio_handler(message: types.Message):
         for item in unsynced_items:
             word = item["word"]
             page_id = item["page_id"]
-            success, result = audio_service.download_oxford_audio(word)
+            success, result = audio_service.download_audio(word)
             if success:
                 success_ids.append(page_id)
             else:

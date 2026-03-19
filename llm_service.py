@@ -60,11 +60,44 @@ Follow these specific rules:
 }}
 """
 
+    def get_vocab_prompt_v2(self, word: str) -> str:
+        return f"""Generate comprehensive vocabulary information for the word: {word}
+
+CRITICAL RULE FOR SPELLING:
+If the input word "{word}" is misspelled or has a typo, identify the most likely intended English word and provide the vocabulary information for that corrected word instead.
+
+Follow these specific rules:
+1. Pronunciation: Use only US Phonetic Alphabet. Format must be exactly /.../ (e.g., /əˈbiliti/). Do not include "US:" prefix.
+2. Provide the main "meaning_vn" as the primary Vietnamese definition.
+3. For "example", provide a high-quality English sentence followed by its Vietnamese translation in parentheses.
+4. For "patterns", "synonyms", "antonyms", "related_words", "paraphrase", and "collocation", ALWAYS include the Vietnamese meaning in parentheses next to every English term (e.g., "disaster (thảm họa)").
+5. Ensure the JSON is valid and contains no preamble or markdown code blocks.
+
+Return ONLY this JSON structure:
+
+{{
+ "word": "Corrected word if misspelled",
+ "category": ["noun/verb/adj..."],
+ "pronunciation": "/.../",
+ "meaning_vn": "Nghĩa tiếng việt ngắn gọn, dễ hiểu",
+ "meaning": "English definition based on Oxford",
+ "example": "English sentence. (Dịch tiếng Việt)",
+ "level": "A1-C2",
+ "topic": [],
+ "patterns": "pattern 1 (nghĩa)\\npattern 2 (nghĩa)",
+ "synonyms": "synonym 1 (nghĩa)\\nsynonym 2 (nghĩa)",
+ "antonyms": "antonym 1 (nghĩa)\\nantonym 2 (nghĩa)",
+ "related_words": "word 1 (nghĩa)\\nword 2 (nghĩa)",
+ "paraphrase": "phrase 1 (nghĩa)\\nphrase 2 (nghĩa)",
+ "collocation": "collo 1 (nghĩa)\\ncollo 2 (nghĩa)"
+}}
+"""
+
     def call_llm(self, word: str, model_key: str = None) -> dict:
         model_key = model_key or config.DEFAULT_MODEL
         cfg = config.MODELS_CONFIG.get(
             model_key, config.MODELS_CONFIG[config.DEFAULT_MODEL])
-        prompt = self.get_vocab_prompt(word)
+        prompt = self.get_vocab_prompt_v2(word)
 
         text = ""
         if cfg["provider"] == "openai":
