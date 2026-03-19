@@ -1,4 +1,5 @@
-from notion_client import Client
+import asyncio
+from notion_client import AsyncClient
 from config import config
 
 
@@ -23,7 +24,7 @@ class NotionService:
 
     # ----------------- Init ----------------- #
     def __init__(self):
-        self.notion = Client(
+        self.notion = AsyncClient(
             auth=config.NOTION_TOKEN) if config.NOTION_TOKEN else None
 
     # ----------------- Helpers ----------------- #
@@ -62,7 +63,7 @@ class NotionService:
         return sel.get("name", "")
 
     # ------------------- Notion Actions ------------------- #
-    def push_to_notion(self, vocab: dict):
+    async def push_to_notion(self, vocab: dict):
         if not self.notion:
             raise Exception("Notion Token not configured")
 
@@ -86,18 +87,18 @@ class NotionService:
         }
 
         try:
-            self.notion.pages.create(
+            await self.notion.pages.create(
                 parent={"database_id": config.NOTION_DATABASE_ID}, properties=properties)
         except Exception as e:
             print(f"Error pushing to Notion: {e}")
             raise
 
-    def _query_database(self, checkbox_field: str) -> list[dict]:
+    async def _query_database(self, checkbox_field: str) -> list[dict]:
         if not self.notion:
             raise Exception("Notion Token not configured")
 
         try:
-            response = self.notion.databases.query(
+            response = await self.notion.databases.query(
                 database_id=config.NOTION_DATABASE_ID,
                 filter={"property": checkbox_field,
                         "checkbox": {"equals": False}}
@@ -114,7 +115,6 @@ class NotionService:
                     "pronunciation": self._extract_text(props.get(self.PROP_PRONUNCIATION, {})),
                     "example": self._extract_text(props.get(self.PROP_EXAMPLE, {})),
                     "category": self._extract_multi_select(props.get(self.PROP_CATEGORY, {})),
-                    # "topic": self._extract_multi_select(props.get(self.PROP_TOPIC, {})),
                     "level": self._extract_select(props.get(self.PROP_LEVEL, {})),
                     "word_patterns": self._extract_text(props.get(self.PROP_WORD_PATTERNS, {})),
                     "synonyms": self._extract_text(props.get(self.PROP_SYNONYMS, {})),
@@ -128,12 +128,12 @@ class NotionService:
             print(f"Error querying Notion: {e}")
             return []
 
-    def _query_database_only_word(self, checkbox_field: str) -> list[dict]:
+    async def _query_database_only_word(self, checkbox_field: str) -> list[dict]:
         if not self.notion:
             raise Exception("Notion Token not configured")
 
         try:
-            response = self.notion.databases.query(
+            response = await self.notion.databases.query(
                 database_id=config.NOTION_DATABASE_ID,
                 filter={"property": checkbox_field,
                         "checkbox": {"equals": False}}
@@ -151,23 +151,28 @@ class NotionService:
             print(f"Error querying Notion: {e}")
             return []
 
-    def get_unsynced_vocab(self) -> list[dict]:
-        return self._query_database(self.PROP_SYNCED_TO_ANKI)
+    async def get_unsynced_vocab(self) -> list[dict]:
+        return await self._query_database(self.PROP_SYNCED_TO_ANKI)
 
-    def get_unsynced_audio(self) -> list[dict]:
-        return self._query_database_only_word(self.PROP_SYNC_AUDIO)
+    async def get_unsynced_audio(self) -> list[dict]:
+        return await self._query_database_only_word(self.PROP_SYNC_AUDIO)
 
-    def mark_as_synced(self, prop_name: str, page_ids: list[str]):
+    async def mark_as_synced(self, prop_name: str, page_ids: list[str]):
+        """Mark multiple pages as synced in parallel using asyncio.gather."""
         if not self.notion:
             return
-        for page_id in page_ids:
+
+        async def _update_one(page_id: str):
             try:
-                self.notion.pages.update(
+                await self.notion.pages.update(
                     page_id=page_id,
                     properties={prop_name: {"checkbox": True}}
                 )
             except Exception as e:
                 print(f"Error marking page {page_id} as synced: {e}")
+
+        # Run all updates in parallel
+        await asyncio.gather(*[_update_one(pid) for pid in page_ids])
 
 
 notion_service = NotionService()

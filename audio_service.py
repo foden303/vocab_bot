@@ -1,6 +1,6 @@
 import os
-import requests
 import re
+import aiohttp
 from config import config
 
 
@@ -12,106 +12,60 @@ class AudioService:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
 
-    def download_audio(self, word: str):
+    async def download_audio(self, word: str):
         word = word.strip().lower()
 
-        # >= 2 word → Forvo
+        # >= 2 word → Forvo (disabled)
         if len(word.split()) >= 2:
-            # ignore download phrase
-            # success, path = self._download_forvo(word)
-            # if success:
-            #     return True, path
             return False, "Phrase audio not found, please download manually"
 
         # 1 word → Oxford
-        success, path = self._download_oxford_audio(word)
+        success, path = await self._download_oxford_audio(word)
         if success:
             return True, path
 
         return False, "Word audio not found, please download manually"
 
-    # FORVO FUNCTION
-    def _download_forvo(self, word):
-        url = f"{self.forvo_base}{word.replace(' ', '%20')}/en_usa/"
-        save_path = os.path.join(
-            config.SOUNDS_DIR, f"{word.replace(' ', '_')}.mp3")
-
-        try:
-            res = requests.get(url, headers=self.headers, timeout=10)
-            html = res.text
-
-            matches = re.findall(r"Play\((.*?)\)", html)
-
-            for m in matches:
-                parts = m.split(",")
-                if len(parts) < 3:
-                    continue
-                mp3_base64 = parts[2].strip("'")
-                try:
-                    mp3 = base64.b64decode(mp3_base64).decode()
-                    audio_url = f"https://audio00.forvo.com/mp3/{mp3}"
-
-                    audio = requests.get(
-                        audio_url, headers=self.headers, timeout=10)
-                    if audio.status_code == 200:
-                        with open(save_path, "wb") as f:
-                            f.write(audio.content)
-                        return True, save_path
-                except:
-                    continue
-
-            return False, "Forvo audio not found"
-
-        except Exception as e:
-            return False, str(e)
-
-    def _download_oxford_audio(self, word):
+    async def _download_oxford_audio(self, word):
         """
-        Attempts to download the US English pronunciation audio for a word from Oxford Learner's Dictionary.
-        Saves it to config.SOUNDS_DIR as {word}.mp3.
+        Attempts to download the US English pronunciation audio for a word
+        from Oxford Learner's Dictionary using aiohttp (non-blocking).
         """
         url = f"{self.base_url}{word.lower()}"
         save_path = os.path.join(config.SOUNDS_DIR, f"{word.lower()}.mp3")
 
         try:
-            response = requests.get(url, headers=self.headers, timeout=10)
-            if response.status_code != 200:
-                # Try with a common suffix or search if needed, but simple direct link is a good start
-                return False, f"Word not found"
+            async with aiohttp.ClientSession(headers=self.headers) as session:
+                # Fetch the dictionary page
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as response:
+                    if response.status != 200:
+                        return False, "Word not found"
 
-            # Search for US audio first, then UK
-            # Pattern: data-src-mp3="https://www.oxfordlearnersdictionaries.com/media/english/us_pron/...mp3"
-            # We look for the 'pron-us' class or similar
+                    html = await response.text()
 
-            # Specific targeting for US pronunciation
-            # Oxford usually puts US audio in a container with class 'phons-us'
+                # Find all mp3 links
+                mp3_links = re.findall(r'data-src-mp3="([^"]+)"', html)
 
-            # Find all potential audio blocks
-            # We look for the data-src-mp3 attribute specifically in the US phonetic section if possible
-            # But a robust way is to find all mp3 links and strictly filter for 'us_pron'
-            mp3_links = re.findall(r'data-src-mp3="([^"]+)"', response.text)
+                target_url = None
+                if mp3_links:
+                    us_links = [l for l in mp3_links if "us_pron" in l]
+                    if us_links:
+                        target_url = us_links[0]
+                    else:
+                        return False, "US audio pronunciation not found for this word"
 
-            target_url = None
-            if mp3_links:
-                # Filter strictly for 'us_pron' as requested by the user
-                us_links = [l for l in mp3_links if "us_pron" in l]
-                if us_links:
-                    target_url = us_links[0]
-                else:
-                    return False, "US audio pronunciation not found for this word"
+                if not target_url:
+                    return False, "Audio link not found on page"
 
-            if not target_url:
-                return False, "Audio link not found on page"
-
-            # Download the mp3
-            audio_response = requests.get(
-                target_url, headers=self.headers, timeout=10)
-            if audio_response.status_code == 200:
-                with open(save_path, "wb") as f:
-                    f.write(audio_response.content)
-                return True, save_path
-            else:
-                return False, f"Failed to download audio content (Status {audio_response.status_code})"
+                # Download the mp3
+                async with session.get(target_url, timeout=aiohttp.ClientTimeout(total=10)) as audio_response:
+                    if audio_response.status == 200:
+                        content = await audio_response.read()
+                        with open(save_path, "wb") as f:
+                            f.write(content)
+                        return True, save_path
+                    else:
+                        return False, f"Failed to download audio content (Status {audio_response.status})"
 
         except Exception as e:
             print(f"Error downloading audio for {word}: {e}")

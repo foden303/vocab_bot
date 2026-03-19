@@ -1,13 +1,13 @@
 import json
 import re
-from openai import OpenAI
+from openai import AsyncOpenAI
 from google import genai
 from config import config
 
 
 class LLMService:
     def __init__(self):
-        self.openai_client = OpenAI(
+        self.openai_client = AsyncOpenAI(
             api_key=config.OPENAI_API_KEY
         ) if config.OPENAI_API_KEY else None
 
@@ -15,16 +15,16 @@ class LLMService:
             api_key=config.GEMINI_API_KEY
         ) if config.GEMINI_API_KEY else None
 
-        self.openrouter_client = OpenAI(
+        self.openrouter_client = AsyncOpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=config.OPENROUTER_API_KEY,
         ) if config.OPENROUTER_API_KEY else None
 
-        self.ollama_client = OpenAI(
+        self.ollama_client = AsyncOpenAI(
             base_url=config.OLLAMA_API_BASE,
-            api_key="none"  # Ollama doesn't require keys usually
+            api_key="none"
         )
-        self.lmstudio_client = OpenAI(
+        self.lmstudio_client = AsyncOpenAI(
             base_url=config.LMSTUDIO_API_BASE,
             api_key="none"
         )
@@ -93,7 +93,7 @@ Return ONLY this JSON structure:
 }}
 """
 
-    def call_llm(self, word: str, model_key: str = None) -> dict:
+    async def call_llm(self, word: str, model_key: str = None) -> dict:
         model_key = model_key or config.DEFAULT_MODEL
         cfg = config.MODELS_CONFIG.get(
             model_key, config.MODELS_CONFIG[config.DEFAULT_MODEL])
@@ -103,7 +103,7 @@ Return ONLY this JSON structure:
         if cfg["provider"] == "openai":
             if not self.openai_client:
                 raise Exception("OpenAI API Key not configured")
-            response = self.openai_client.chat.completions.create(
+            response = await self.openai_client.chat.completions.create(
                 model=cfg["model"],
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0
@@ -113,7 +113,7 @@ Return ONLY this JSON structure:
         elif cfg["provider"] == "gemini":
             if not self.gemini_client:
                 raise Exception("Gemini API Key not configured")
-            response = self.gemini_client.models.generate_content(
+            response = await self.gemini_client.aio.models.generate_content(
                 model=cfg["model"],
                 contents=prompt
             )
@@ -122,14 +122,14 @@ Return ONLY this JSON structure:
         elif cfg["provider"] == "openrouter":
             if not config.OPENROUTER_API_KEY:
                 raise Exception("OpenRouter API Key not configured")
-            response = self.openrouter_client.chat.completions.create(
+            response = await self.openrouter_client.chat.completions.create(
                 model=cfg["model"],
                 messages=[{"role": "user", "content": prompt}],
             )
             text = response.choices[0].message.content
 
         elif cfg["provider"] == "ollama":
-            response = self.ollama_client.chat.completions.create(
+            response = await self.ollama_client.chat.completions.create(
                 model=cfg["model"],
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0
@@ -137,7 +137,7 @@ Return ONLY this JSON structure:
             text = response.choices[0].message.content
 
         elif cfg["provider"] == "lmstudio":
-            response = self.lmstudio_client.chat.completions.create(
+            response = await self.lmstudio_client.chat.completions.create(
                 model=cfg["model"],
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0

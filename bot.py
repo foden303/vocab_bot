@@ -1,3 +1,4 @@
+import asyncio
 import warnings
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
@@ -90,12 +91,13 @@ async def add_vocab_handler(message: types.Message):
         return
 
     word = args.strip()
-    processing_msg = await message.reply(f"⏳ Generating vocab for: **{word}**...")
+    processing_msg = await message.reply(f"⏳ Generating vocab for: **{word}**...", parse_mode="Markdown")
 
     try:
         model_key = USER_MODELS.get(message.chat.id, config.DEFAULT_MODEL)
-        vocab = llm_service.call_llm(word, model_key)
-        notion_service.push_to_notion(vocab)
+        # Both calls are now async — event loop is free for other users
+        vocab = await llm_service.call_llm(word, model_key)
+        await notion_service.push_to_notion(vocab)
         await bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=processing_msg.message_id,
@@ -120,7 +122,7 @@ async def sync_handler(message: types.Message):
     sync_msg = await message.reply("⏳ Fetching unsynced vocab from Notion...")
 
     try:
-        unsynced_items = notion_service.get_unsynced_vocab()
+        unsynced_items = await notion_service.get_unsynced_vocab()
 
         if not unsynced_items:
             await bot.edit_message_text(
@@ -143,7 +145,7 @@ async def sync_handler(message: types.Message):
         failed_items = [res for res in sync_results if not res["success"]]
 
         if success_ids:
-            notion_service.mark_as_synced(
+            await notion_service.mark_as_synced(
                 notion_service.PROP_SYNCED_TO_ANKI, success_ids)
 
         report = f"✅ Synced **{len(success_ids)}** items to Anki."
@@ -174,7 +176,7 @@ async def get_audio_handler(message: types.Message):
     wait_msg = await message.reply("⏳ Searching for unsynced vocab in Notion...")
 
     try:
-        unsynced_items = notion_service.get_unsynced_audio()
+        unsynced_items = await notion_service.get_unsynced_audio()
 
         if not unsynced_items:
             await bot.edit_message_text(
@@ -187,23 +189,25 @@ async def get_audio_handler(message: types.Message):
         await bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=wait_msg.message_id,
-            text=f"🎧 Found {len(unsynced_items)} unsynced items. Starting download from Oxford..."
+            text=f"🎧 Found {len(unsynced_items)} unsynced items. Downloading audio in parallel..."
         )
 
-        success_ids = []
-        failed_list = []
-
-        for item in unsynced_items:
+        # Download all audio files in parallel using asyncio.gather
+        async def _download_one(item):
             word = item["word"]
             page_id = item["page_id"]
-            success, result = audio_service.download_audio(word)
-            if success:
-                success_ids.append(page_id)
-            else:
-                failed_list.append(f"{word} ({result})")
+            success, result = await audio_service.download_audio(word)
+            return {"page_id": page_id, "word": word, "success": success, "result": result}
+
+        results = await asyncio.gather(
+            *[_download_one(item) for item in unsynced_items]
+        )
+
+        success_ids = [r["page_id"] for r in results if r["success"]]
+        failed_list = [f"{r['word']} ({r['result']})" for r in results if not r["success"]]
 
         if success_ids:
-            notion_service.mark_as_synced(
+            await notion_service.mark_as_synced(
                 notion_service.PROP_SYNC_AUDIO, success_ids)
 
         report = f"📊 **Audio Download Report**\n- Success: {len(success_ids)}\n- Failed: {len(failed_list)}"
