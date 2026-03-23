@@ -29,7 +29,8 @@ async def help_handler(message: types.Message):
 **Commands:**
 /add <word> - Generate and add word to Notion
 /getaudio - Download US pronunciations from Oxford
-/sync - Sync unsynced vocab & audio to Anki
+/sync - Sync unsynced vocab & audio to local Anki
+/sync_web - Sync local Anki to AnkiWeb
 /setmodel - Switch between LLM models
 /info - Show current settings
 /help - Show this message
@@ -151,11 +152,17 @@ async def sync_handler(message: types.Message):
         report = f"✅ Synced **{len(success_ids)}** items to Anki."
         if failed_items:
             report += f"\n❌ Failed **{len(failed_items)}** items."
-            for f in failed_items:
+
+            # Show up to 10 failures to avoid Message_too_long
+            max_show = 10
+            for f in failed_items[:max_show]:
                 # Find word name for error reporting
                 word = next(
                     (item["word"] for item in unsynced_items if item["page_id"] == f["page_id"]), "Unknown")
                 report += f"\n- {word}: {f['error']}"
+
+            if len(failed_items) > max_show:
+                report += f"\n... and {len(failed_items) - max_show} more."
 
         await bot.edit_message_text(
             chat_id=message.chat.id,
@@ -168,6 +175,38 @@ async def sync_handler(message: types.Message):
             chat_id=message.chat.id,
             message_id=sync_msg.message_id,
             text=f"❌ Sync Error: {str(e)}"
+        )
+
+
+@dp.message_handler(commands=['sync_web'])
+async def sync_web_handler(message: types.Message):
+    # Check if Anki is open first
+    if not anki_service.is_connected():
+        await message.reply("⚠️ **Anki is not open!**\n\nPlease open Anki and make sure the AnkiConnect add-on is installed before syncing.", parse_mode="Markdown")
+        return
+
+    sync_msg = await message.reply("⏳ Syncing local Anki to AnkiWeb...")
+
+    try:
+        res = anki_service.sync_web()
+
+        if res.get("error"):
+            await bot.edit_message_text(
+                chat_id=message.chat.id,
+                message_id=sync_msg.message_id,
+                text=f"❌ AnkiWeb Sync Error: {res['error']}"
+            )
+        else:
+            await bot.edit_message_text(
+                chat_id=message.chat.id,
+                message_id=sync_msg.message_id,
+                text="✅ Successfully triggered AnkiWeb synchronization."
+            )
+    except Exception as e:
+        await bot.edit_message_text(
+            chat_id=message.chat.id,
+            message_id=sync_msg.message_id,
+            text=f"❌ Fatal Error: {str(e)}"
         )
 
 
@@ -204,7 +243,8 @@ async def get_audio_handler(message: types.Message):
         )
 
         success_ids = [r["page_id"] for r in results if r["success"]]
-        failed_list = [f"{r['word']} ({r['result']})" for r in results if not r["success"]]
+        failed_list = [
+            f"{r['word']} ({r['result']})" for r in results if not r["success"]]
 
         if success_ids:
             await notion_service.mark_as_synced(

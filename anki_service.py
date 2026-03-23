@@ -131,4 +131,7 @@ class AnkiService:
                 results.append({"page_id": item["page_id"], "success": True, "note_id": res["result"]})
         return results
 
+    def sync_web(self):
+        return self._invoke("sync")
+
 anki_service = AnkiService()
