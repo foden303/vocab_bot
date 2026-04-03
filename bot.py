@@ -72,7 +72,7 @@ async def set_model_handler(message: types.Message):
 
 @dp.callback_query_handler(lambda c: c.data.startswith('model_'))
 async def process_model_callback(callback_query: types.CallbackQuery):
-    model_key = callback_query.data.split('_')[1]
+    model_key = callback_query.data.split('_', 1)[1]
     USER_MODELS[callback_query.message.chat.id] = model_key
 
     await bot.answer_callback_query(callback_query.id)

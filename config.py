@@ -58,7 +58,7 @@ class Config:
             "model": "local-model"
         }
     }
-    DEFAULT_MODEL = "openrouter_fast"
+    DEFAULT_MODEL = "openrouter_auto"
 
     # Anki Configuration
     ANKI_CONNECT_URL = os.getenv("ANKI_CONNECT_URL", "http://localhost:8765")
