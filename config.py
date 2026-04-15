@@ -7,7 +7,8 @@ load_dotenv()
 class Config:
     BOT_TOKEN = os.getenv("BOT_TOKEN")
     NOTION_TOKEN = os.getenv("NOTION_TOKEN")
-    NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
+    NOTION_DB_WORD_ID = os.getenv("NOTION_DB_WORD_ID")
+    NOTION_DB_COLLOCATION_ID = os.getenv("NOTION_DB_COLLOCATION_ID")
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -62,7 +63,9 @@ class Config:
 
     # Anki Configuration
     ANKI_CONNECT_URL = os.getenv("ANKI_CONNECT_URL", "http://localhost:8765")
-    ANKI_DECK_NAME = os.getenv("ANKI_DECK_NAME", "VocabBot")
+    ANKI_DECK_NAME_WORD = os.getenv("ANKI_DECK_NAME_WORD", "VocabBot")
+    ANKI_DECK_NAME_COLLOCATION = os.getenv(
+        "ANKI_DECK_NAME_COLLOCATION", "CollocationBot")
     ANKI_MODEL_NAME = os.getenv("ANKI_MODEL_NAME", "Basic")
     SOUNDS_DIR = os.getenv("SOUNDS_DIR", os.path.join(
         os.path.dirname(__file__), "sounds"))

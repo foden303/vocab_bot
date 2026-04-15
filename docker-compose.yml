@@ -11,6 +11,6 @@ services:
     # environment:
     #   - BOT_TOKEN=${BOT_TOKEN}
     #   - NOTION_TOKEN=${NOTION_TOKEN}
-    #   - NOTION_DATABASE_ID=${NOTION_DATABASE_ID}
+    #   - NOTION_DB_WORD_ID=${NOTION_DB_WORD_ID}
     #   - GEMINI_API_KEY=${GEMINI_API_KEY}
     #   - ANKI_CONNECT_URL=${ANKI_CONNECT_URL}

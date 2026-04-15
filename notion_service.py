@@ -6,6 +6,8 @@ from config import config
 class NotionService:
     # ----------------- Notion Property Constants ----------------- #
     PROP_WORD = "Word"
+    PROP_COLLOCATION = "Collocation"
+    PROP_TYPE = "Type"
     PROP_CATEGORY = "Category"
     PROP_PRONUNCIATION = "Pronunciation"
     PROP_MEANING_VN = "Meaning VN"
@@ -63,7 +65,29 @@ class NotionService:
         return sel.get("name", "")
 
     # ------------------- Notion Actions ------------------- #
-    async def push_to_notion(self, vocab: dict):
+    async def push_to_notion_collocation_db(self, collocation: dict):
+        if not self.notion:
+            raise Exception("Notion Token not configured")
+
+        properties = {
+            self.PROP_COLLOCATION: {"title": self._build_rich_text(collocation.get("collocation", ""))},
+            self.PROP_TYPE: {"rich_text": self._build_rich_text(self.to_str(collocation.get("type", "")))},
+            self.PROP_MEANING: {"rich_text": self._build_rich_text(self.to_str(collocation.get("meaning", "")))},
+            self.PROP_EXAMPLE: {"rich_text": self._build_rich_text(self.to_str(collocation.get("example", "")))},
+            self.PROP_TOPIC: {"multi_select": self._build_multi_select(collocation.get("topic", []))},
+            self.PROP_SYNONYMS: {"rich_text": self._build_rich_text(self.to_str(collocation.get("synonyms", [])))},
+            self.PROP_SYNCED_TO_ANKI: {"checkbox": False},
+            self.PROP_SYNC_AUDIO: {"checkbox": False},
+        }
+
+        try:
+            await self.notion.pages.create(
+                parent={"database_id": config.NOTION_DB_COLLOCATION_ID}, properties=properties)
+        except Exception as e:
+            print(f"Error pushing to Notion: {e}")
+            raise
+
+    async def push_to_notion_word_db(self, vocab: dict):
         if not self.notion:
             raise Exception("Notion Token not configured")
 
@@ -88,7 +112,7 @@ class NotionService:
 
         try:
             await self.notion.pages.create(
-                parent={"database_id": config.NOTION_DATABASE_ID}, properties=properties)
+                parent={"database_id": config.NOTION_DB_WORD_ID}, properties=properties)
         except Exception as e:
             print(f"Error pushing to Notion: {e}")
             raise
@@ -99,7 +123,7 @@ class NotionService:
 
         try:
             response = await self.notion.databases.query(
-                database_id=config.NOTION_DATABASE_ID,
+                database_id=config.NOTION_DB_WORD_ID,
                 filter={"property": checkbox_field,
                         "checkbox": {"equals": False}}
             )
@@ -128,13 +152,40 @@ class NotionService:
             print(f"Error querying Notion: {e}")
             return []
 
+    async def _query_database_collocation(self, checkbox_field: str) -> list[dict]:
+        if not self.notion:
+            raise Exception("Notion Token not configured")
+
+        try:
+            response = await self.notion.databases.query(
+                database_id=config.NOTION_DB_COLLOCATION_ID,
+                filter={"property": checkbox_field,
+                        "checkbox": {"equals": False}}
+            )
+
+            vocab_list = []
+            for page in response.get("results", []):
+                props = page.get("properties", {})
+                vocab_list.append({
+                    "page_id": page.get("id"),
+                    "collocation": self._extract_text(props.get(self.PROP_COLLOCATION, {})),
+                    "type": self._extract_select(props.get(self.PROP_TYPE, {})),
+                    "meaning": self._extract_text(props.get(self.PROP_MEANING, {})),
+                    "example": self._extract_text(props.get(self.PROP_EXAMPLE, {})),
+                    "synonyms": self._extract_text(props.get(self.PROP_SYNONYMS, {})),
+                })
+            return vocab_list
+        except Exception as e:
+            print(f"Error querying Notion: {e}")
+            return []
+
     async def _query_database_only_word(self, checkbox_field: str) -> list[dict]:
         if not self.notion:
             raise Exception("Notion Token not configured")
 
         try:
             response = await self.notion.databases.query(
-                database_id=config.NOTION_DATABASE_ID,
+                database_id=config.NOTION_DB_WORD_ID,
                 filter={"property": checkbox_field,
                         "checkbox": {"equals": False}}
             )
@@ -153,6 +204,9 @@ class NotionService:
 
     async def get_unsynced_vocab(self) -> list[dict]:
         return await self._query_database(self.PROP_SYNCED_TO_ANKI)
+
+    async def get_unsynced_collocation(self) -> list[dict]:
+        return await self._query_database_collocation(self.PROP_SYNCED_TO_ANKI)
 
     async def get_unsynced_audio(self) -> list[dict]:
         return await self._query_database_only_word(self.PROP_SYNC_AUDIO)

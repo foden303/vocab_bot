@@ -1,3 +1,5 @@
+from constant import TYPE_WORD
+from constant import TYPE_COLLOCATION
 import asyncio
 import warnings
 from aiogram import Bot, Dispatcher, types
@@ -28,8 +30,10 @@ async def help_handler(message: types.Message):
 
 **Commands:**
 /add <word> - Generate and add word to Notion
+/collo <collocation> - Generate and add collocation to Notion
 /getaudio - Download US pronunciations from Oxford
 /sync - Sync unsynced vocab & audio to local Anki
+/sync_collocation - Sync unsynced collocation & audio to local Anki
 /sync_web - Sync local Anki to AnkiWeb
 /setmodel - Switch between LLM models
 /info - Show current settings
@@ -47,7 +51,7 @@ async def info_handler(message: types.Message):
     cfg = config.MODELS_CONFIG.get(model_key)
 
     # Obfuscate Database ID for security
-    db_id = config.NOTION_DATABASE_ID or "NOT_FOUND"
+    db_id = config.NOTION_DB_WORD_ID or "NOT_FOUND"
     obfuscated_id = f"{db_id[:6]}...{db_id[-4:]}" if len(db_id) > 10 else db_id
 
     info_text = f"""
@@ -97,12 +101,41 @@ async def add_vocab_handler(message: types.Message):
     try:
         model_key = USER_MODELS.get(message.chat.id, config.DEFAULT_MODEL)
         # Both calls are now async — event loop is free for other users
-        vocab = await llm_service.call_llm(word, model_key)
-        await notion_service.push_to_notion(vocab)
+        vocab = await llm_service.call_llm(word, TYPE_WORD, model_key)
+        await notion_service.push_to_notion_word_db(vocab)
         await bot.edit_message_text(
             chat_id=message.chat.id,
             message_id=processing_msg.message_id,
             text=f"✅ Added **{word}** to Notion vocab database.",
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        await bot.edit_message_text(
+            chat_id=message.chat.id,
+            message_id=processing_msg.message_id,
+            text=f"❌ Error: {str(e)}"
+        )
+
+
+@dp.message_handler(commands=['collo'])
+async def add_collocation_handler(message: types.Message):
+    args = message.get_args()
+    if not args:
+        await message.reply("Usage: /collo <collocation>")
+        return
+
+    collocation = args.strip()
+    processing_msg = await message.reply(f"⏳ Generating collocation for: **{collocation}**...", parse_mode="Markdown")
+
+    try:
+        model_key = USER_MODELS.get(message.chat.id, config.DEFAULT_MODEL)
+        # Both calls are now async — event loop is free for other users
+        collocation_data = await llm_service.call_llm(collocation, TYPE_COLLOCATION, model_key)
+        await notion_service.push_to_notion_collocation_db(collocation_data)
+        await bot.edit_message_text(
+            chat_id=message.chat.id,
+            message_id=processing_msg.message_id,
+            text=f"✅ Added **{collocation}** to Notion collocation database.",
             parse_mode="Markdown"
         )
     except Exception as e:
@@ -140,6 +173,72 @@ async def sync_handler(message: types.Message):
         )
 
         sync_results = anki_service.sync_to_anki(unsynced_items)
+
+        success_ids = [res["page_id"]
+                       for res in sync_results if res["success"]]
+        failed_items = [res for res in sync_results if not res["success"]]
+
+        if success_ids:
+            await notion_service.mark_as_synced(
+                notion_service.PROP_SYNCED_TO_ANKI, success_ids)
+
+        report = f"✅ Synced **{len(success_ids)}** items to Anki."
+        if failed_items:
+            report += f"\n❌ Failed **{len(failed_items)}** items."
+
+            # Show up to 10 failures to avoid Message_too_long
+            max_show = 10
+            for f in failed_items[:max_show]:
+                # Find word name for error reporting
+                word = next(
+                    (item["word"] for item in unsynced_items if item["page_id"] == f["page_id"]), "Unknown")
+                report += f"\n- {word}: {f['error']}"
+
+            if len(failed_items) > max_show:
+                report += f"\n... and {len(failed_items) - max_show} more."
+
+        await bot.edit_message_text(
+            chat_id=message.chat.id,
+            message_id=sync_msg.message_id,
+            text=report,
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        await bot.edit_message_text(
+            chat_id=message.chat.id,
+            message_id=sync_msg.message_id,
+            text=f"❌ Sync Error: {str(e)}"
+        )
+
+
+@dp.message_handler(commands=['sync_collocation'])
+async def sync_collocation_handler(message: types.Message):
+    # Check if Anki is open first
+    if not anki_service.is_connected():
+        await message.reply("⚠️ **Anki is not open!**\n\nPlease open Anki and make sure the AnkiConnect add-on is installed before syncing.", parse_mode="Markdown")
+        return
+
+    sync_msg = await message.reply("⏳ Fetching unsynced collocation from Notion...")
+
+    try:
+        unsynced_items = await notion_service.get_unsynced_collocation()
+
+        if not unsynced_items:
+            await bot.edit_message_text(
+                chat_id=message.chat.id,
+                message_id=sync_msg.message_id,
+                text="✅ All vocabulary items are already synced."
+            )
+            return
+
+        await bot.edit_message_text(
+            chat_id=message.chat.id,
+            message_id=sync_msg.message_id,
+            text=f"🔄 Syncing {len(unsynced_items)} items to Anki..."
+        )
+
+        sync_results = anki_service.sync_to_anki(
+            unsynced_items, TYPE_COLLOCATION)
 
         success_ids = [res["page_id"]
                        for res in sync_results if res["success"]]

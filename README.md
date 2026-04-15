@@ -38,7 +38,8 @@ Create a `.env` file in the root directory:
 # Bot Keys
 BOT_TOKEN=your_telegram_bot_token
 NOTION_TOKEN=your_notion_api_token
-NOTION_DATABASE_ID=your_notion_database_id
+NOTION_DB_WORD_ID=your_NOTION_DB_WORD_ID
+NOTION_DB_COLLOCATION_ID=your_NOTION_DB_COLLOCATION_ID
 
 # LLM Keys
 GEMINI_API_KEY=your_gemini_api_key

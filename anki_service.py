@@ -1,12 +1,16 @@
+from constant import TYPE_COLLOCATION
+from constant import TYPE_WORD
 import requests
 import os
 import re
 from config import config
 
+
 class AnkiService:
     def __init__(self):
         self.url = config.ANKI_CONNECT_URL
-        self.template_dir = os.path.join(os.path.dirname(__file__), "templates")
+        self.template_dir = os.path.join(
+            os.path.dirname(__file__), "templates")
 
     def _load_template(self, filename):
         path = os.path.join(self.template_dir, filename)
@@ -23,29 +27,33 @@ class AnkiService:
         rendered = template
         for key, value in data.items():
             placeholder = f"{{{{{key}}}}}"
-            rendered = rendered.replace(placeholder, str(value if value else ""))
-            
+            rendered = rendered.replace(
+                placeholder, str(value if value else ""))
+
             # Simple conditional: {{#key}}...{{/key}}
             start_tag = f"{{{{#{key}}}}}"
             end_tag = f"{{{{/{key}}}}}"
             if start_tag in rendered and end_tag in rendered:
                 if value:
                     # Keep content, remove tags
-                    rendered = rendered.replace(start_tag, "").replace(end_tag, "")
+                    rendered = rendered.replace(
+                        start_tag, "").replace(end_tag, "")
                 else:
                     # Remove tags and content between them
                     pattern = re.escape(start_tag) + ".*?" + re.escape(end_tag)
                     rendered = re.sub(pattern, "", rendered, flags=re.DOTALL)
-        
+
             # Inverted conditional: {{^key}}...{{/key}}
             inv_start_tag = f"{{{{^{key}}}}}"
             if inv_start_tag in rendered and end_tag in rendered:
                 if not value:
                     # Keep content, remove tags
-                    rendered = rendered.replace(inv_start_tag, "").replace(end_tag, "")
+                    rendered = rendered.replace(
+                        inv_start_tag, "").replace(end_tag, "")
                 else:
                     # Remove tags and content between them
-                    pattern = re.escape(inv_start_tag) + ".*?" + re.escape(end_tag)
+                    pattern = re.escape(inv_start_tag) + \
+                        ".*?" + re.escape(end_tag)
                     rendered = re.sub(pattern, "", rendered, flags=re.DOTALL)
 
         # Clean up any remaining tags and placeholders
@@ -79,7 +87,7 @@ class AnkiService:
         try:
             with open(filepath, "rb") as f:
                 data = base64.b64encode(f.read()).decode("utf-8")
-            
+
             return self._invoke("storeMediaFile", filename=filename, data=data)
         except Exception as e:
             print(f"Error storing media file {filename}: {e}")
@@ -89,7 +97,7 @@ class AnkiService:
         word = item.get("word", "")
         sound_filename = f"{word}.mp3"
         sound_path = os.path.join(config.SOUNDS_DIR, sound_filename)
-        
+
         # Check if sound file exists and sync it
         if os.path.exists(sound_path):
             self._store_media(sound_filename, sound_path)
@@ -99,13 +107,13 @@ class AnkiService:
 
         front_tpl = self._load_template("front.html")
         back_tpl = self._load_template("back.html")
-        
+
         front = self._render(front_tpl, item)
         back = self._render(back_tpl, item)
 
         params = {
             "note": {
-                "deckName": config.ANKI_DECK_NAME,
+                "deckName": config.ANKI_DECK_NAME_WORD,
                 "modelName": config.ANKI_MODEL_NAME,
                 "fields": {
                     "Front": front,
@@ -118,20 +126,63 @@ class AnkiService:
                 "tags": ["vocab_bot"]
             }
         }
-        
+
         return self._invoke("addNote", **params)
 
-    def sync_to_anki(self, vocab_list: list[dict]):
+    def add_note_collocation(self, item):
+        # word = item.get("word", "")
+        # sound_filename = f"{word}.mp3"
+        # sound_path = os.path.join(config.SOUNDS_DIR, sound_filename)
+
+        # # Check if sound file exists and sync it
+        # if os.path.exists(sound_path):
+        #     self._store_media(sound_filename, sound_path)
+        #     item["sound"] = f"[sound:{sound_filename}]"
+        # else:
+        #     item["sound"] = ""
+
+        front_tpl = self._load_template("front_collo.html")
+        back_tpl = self._load_template("back_collo.html")
+
+        front = self._render(front_tpl, item)
+        back = self._render(back_tpl, item)
+
+        params = {
+            "note": {
+                "deckName": config.ANKI_DECK_NAME_COLLOCATION,
+                "modelName": config.ANKI_MODEL_NAME,
+                "fields": {
+                    "Front": front,
+                    "Back": back
+                },
+                "options": {
+                    "allowDuplicate": False,
+                    "duplicateScope": "deck"
+                },
+                "tags": ["vocab_bot"]
+            }
+        }
+
+        return self._invoke("addNote", **params)
+
+    def sync_to_anki(self, vocab_list: list[dict], type: str = TYPE_WORD):
         results = []
         for item in vocab_list:
-            res = self.add_note(item)
+            if type == TYPE_WORD:
+                res = self.add_note(item)
+            elif type == TYPE_COLLOCATION:
+                res = self.add_note_collocation(item)
+
             if res.get("error"):
-                results.append({"page_id": item["page_id"], "success": False, "error": res["error"]})
+                results.append(
+                    {"page_id": item["page_id"], "success": False, "error": res["error"]})
             else:
-                results.append({"page_id": item["page_id"], "success": True, "note_id": res["result"]})
+                results.append(
+                    {"page_id": item["page_id"], "success": True, "note_id": res["result"]})
         return results
 
     def sync_web(self):
         return self._invoke("sync")
+
 
 anki_service = AnkiService()

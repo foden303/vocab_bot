@@ -1,3 +1,5 @@
+from constant import TYPE_WORD
+from constant import TYPE_COLLOCATION
 import json
 import re
 from openai import AsyncOpenAI
@@ -60,6 +62,32 @@ Follow these specific rules:
 }}
 """
 
+    def get_collocation_prompt(self, collocation: str) -> str:
+        return f"""Generate concise information for the English collocation: "{collocation}"
+
+    CRITICAL RULE:
+    If the input "{collocation}" is unnatural, incorrect, or not a valid collocation, correct it.
+
+    Rules:
+    - Focus on the collocation as a whole
+    - Identify collocation type
+    - Use natural, common English
+    - Keep output SHORT and concise
+    - Synonyms: maximum 2 items
+    - Ensure valid JSON only (no explanation, no markdown)
+
+    Return ONLY JSON:
+
+    {{
+    "collocation": "...",
+    "type": "...",
+    "topic": [],
+    "meaning": "Nghĩa tiếng Việt ngắn gọn, tự nhiên",
+    "example": "Natural English sentence. (Dịch tiếng Việt)",
+    "synonyms": "alternative collocation 1 (nghĩa)\\nalternative collocation 2 (nghĩa)"
+    }}
+    """
+
     def get_vocab_prompt_v2(self, word: str) -> str:
         return f"""Generate comprehensive vocabulary information for the word: {word}
 
@@ -93,11 +121,15 @@ Return ONLY this JSON structure:
 }}
 """
 
-    async def call_llm(self, word: str, model_key: str = None) -> dict:
+    async def call_llm(self, text_input: str, type: str = TYPE_WORD, model_key: str = None) -> dict:
         model_key = model_key or config.DEFAULT_MODEL
         cfg = config.MODELS_CONFIG.get(
             model_key, config.MODELS_CONFIG[config.DEFAULT_MODEL])
-        prompt = self.get_vocab_prompt_v2(word)
+
+        if type == TYPE_COLLOCATION:
+            prompt = self.get_collocation_prompt(text_input)
+        else:
+            prompt = self.get_vocab_prompt_v2(text_input)
 
         text = ""
         if cfg["provider"] == "openai":

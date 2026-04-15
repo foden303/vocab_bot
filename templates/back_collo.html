@@ -1,0 +1,151 @@
+<div class="card back">
+    <div class="header">
+        <div class="collocation-mini">{{collocation}}</div>
+        <div class="type-mini">{{type}}</div>
+
+        <!-- {{#level}} -->
+        <div class="level-badge">{{level}}</div>
+        <!-- {{/level}} -->
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="main-content">
+        <div class="audio-container">
+            {{sound}}{{^sound}}{{tts en_US:collocation}}{{/sound}}
+        </div>
+
+        <div class="meaning-box">
+            <span class="meaning-text">{{meaning}}</span>
+        </div>
+
+        <!-- {{#example}} -->
+        <div class="section example-section">
+            <div class="label">Example</div>
+            <div class="content italic">"{{example}}"</div>
+        </div>
+        <!-- {{/example}} -->
+
+        <!-- {{#synonyms}} -->
+        <div class="section">
+            <div class="label">Similar Expressions</div>
+            <div class="content list-content">{{synonyms}}</div>
+        </div>
+        <!-- {{/synonyms}} -->
+    </div>
+</div>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+    .card {
+        font-family: 'Inter', sans-serif;
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 30px;
+        color: #1e293b;
+        max-width: 500px;
+        margin: auto;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    /* 🔥 collocation title */
+    .collocation-mini {
+        font-size: 26px;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.3;
+    }
+
+    /* 🔥 type */
+    .type-mini {
+        font-size: 14px;
+        color: #6366f1;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+
+    .level-badge {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: #fef08a;
+        color: #854d0e;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .divider {
+        height: 2px;
+        background: linear-gradient(to right, transparent, #e2e8f0, transparent);
+        margin: 0 0 25px 0;
+    }
+
+    .audio-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    /* 🔥 meaning */
+    .meaning-box {
+        background: #eef2ff;
+        padding: 15px;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 25px;
+        border: 1px solid #c7d2fe;
+    }
+
+    .meaning-text {
+        font-size: 20px;
+        font-weight: 600;
+        color: #4338ca;
+        white-space: pre-wrap;
+    }
+
+    .section {
+        margin-bottom: 20px;
+    }
+
+    .label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #94a3b8;
+        margin-bottom: 6px;
+    }
+
+    .content {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #334155;
+        white-space: pre-wrap;
+    }
+
+    .content.italic {
+        font-style: italic;
+        color: #475569;
+    }
+
+    .list-content {
+        color: #1e293b;
+    }
+
+    .example-section {
+        background: #f8fafc;
+        padding: 15px;
+        border-radius: 12px;
+        border-left: 4px solid #6366f1;
+    }
+</style>
